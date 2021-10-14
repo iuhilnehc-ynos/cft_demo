@@ -15,16 +15,22 @@
 """Launch a parameter_blackboard of demo_nodes_cpp and a subscriber_member_function_with_content_filtered_topic of cft_demo."""
 
 from launch import LaunchDescription
+import launch.actions
 import launch_ros.actions
 
 
 def generate_launch_description():
     return LaunchDescription([
         launch_ros.actions.Node(
-            package='demo_nodes_cpp', executable='parameter_blackboard', output='screen'),
-        launch_ros.actions.Node(
-            package='cft_demo',
-            executable='subscriber_member_function_with_content_filtered_topic',
-            output='screen',
-            emulate_tty=True),
+          package='cft_demo',
+          executable='subscriber_member_function_with_content_filtered_topic',
+          output='screen',
+          emulate_tty=True),
+        launch.actions.TimerAction(
+            period=2.,
+            actions=[
+              launch_ros.actions.Node(
+                  package='demo_nodes_cpp', executable='parameter_blackboard', output='screen'),
+            ],
+        ),
     ])
