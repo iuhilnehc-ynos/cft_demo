@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
@@ -23,6 +24,7 @@
 #include "rcl_interfaces/msg/parameter.hpp"
 
 
+using namespace std::chrono_literals;
 using std::placeholders::_1;
 
 class MinimalSubscriberWithContentFilteredTopic : public rclcpp::Node
@@ -46,6 +48,37 @@ public:
     if (!subscription_->is_cft_enabled()) {
       RCLCPP_WARN(this->get_logger(),
         "Content filtered topic is not enabled for the subscription.");
+    } else {
+      print_cft_options();
+
+      // Use a timer with 20s period to set and get content filtered topic options.
+      auto set_get_cft =
+        [this]() -> void
+        {
+          // Only once
+          timer_->cancel();
+
+          // To set content filtered topic options
+          try {
+            // Focus on if the parameter ('test_param') is updated,
+            // not clear whether DDS supports `changed_parameters[].name` without a index,
+            // test with
+            // `ros2 param set /minimal_subscriber_with_content_filtered_topic test_param True`
+            std::string filter_expression =
+              "node=%0 AND changed_parameters[0].name=%1";
+            std::vector<std::string> expression_parameters = {
+              std::string("'") + this->get_fully_qualified_name() + "'",
+              "test_param"
+            };
+            subscription_->set_cft_expression_parameters(filter_expression, expression_parameters);
+          } catch (const std::exception& e) {
+            RCLCPP_WARN(this->get_logger(),
+              "Catch an exception: %s", e.what());
+          }
+
+          print_cft_options();
+        };
+      timer_ = this->create_wall_timer(20s, set_get_cft);
     }
   }
 
@@ -83,7 +116,24 @@ private:
       msg->node.c_str(), to_string(msg.get()).c_str());
   }
 
+  void print_cft_options() {
+    // To get content filtered topic options
+    try {
+      std::string filter_expression;
+      std::vector<std::string> expression_parameters;
+      subscription_->get_cft_expression_parameters(filter_expression, expression_parameters);
+      RCLCPP_INFO(this->get_logger(), "get_cft_expression_parameters filter_expression: [%s]", filter_expression.c_str());
+      for(auto &expression_parameter: expression_parameters) {
+        RCLCPP_INFO(this->get_logger(), "get_cft_expression_parameters expression_parameter: [%s]", expression_parameter.c_str());
+      }
+    } catch (const std::exception& e) {
+      RCLCPP_WARN(this->get_logger(),
+        "Catch an exception: %s", e.what());
+    }
+  }
+
   rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr subscription_;
+  rclcpp::TimerBase::SharedPtr timer_;
 };
 
 int main(int argc, char * argv[])
