@@ -83,6 +83,16 @@ private:
     return ss.str();
   }
 
+  std::string to_string(
+    const std::vector<std::string> & expression_parameters) const
+  {
+    std::ostringstream oss;
+    for(auto &expression_parameter: expression_parameters) {
+      oss << "[" << expression_parameter << "]";
+    }
+    return oss.str();
+  }
+
   void focus_on_parameter_updated(const std::string & param_name) const {
     // To set content filtered topic options
     try {
@@ -96,6 +106,11 @@ private:
         this->get_fully_qualified_name(),
         param_name
       };
+      RCLCPP_INFO(this->get_logger(),
+        "set_cft_expression_parameters filter_expression: [%s]", filter_expression.c_str());
+      RCLCPP_INFO(this->get_logger(),
+        "set_cft_expression_parameters expression_parameters: [%s]",
+          to_string(expression_parameters).c_str());
       subscription_->set_cft_expression_parameters(filter_expression, expression_parameters);
     } catch (const std::exception& e) {
       RCLCPP_WARN(this->get_logger(),
@@ -131,12 +146,9 @@ private:
       subscription_->get_cft_expression_parameters(filter_expression, expression_parameters);
       RCLCPP_INFO(this->get_logger(),
         "get_cft_expression_parameters filter_expression: [%s]", filter_expression.c_str());
-      std::ostringstream oss;
-      for(auto &expression_parameter: expression_parameters) {
-        oss << "[" << expression_parameter << "]";
-      }
       RCLCPP_INFO(this->get_logger(),
-        "get_cft_expression_parameters expression_parameters: [%s]", oss.str().c_str());
+        "get_cft_expression_parameters expression_parameters: [%s]",
+          to_string(expression_parameters).c_str());
     } catch (const std::exception& e) {
       RCLCPP_WARN(this->get_logger(),
         "Catch an exception: %s", e.what());
