@@ -36,7 +36,8 @@ public:
       automatically_declare_parameters_from_overrides(true))
   {
     auto options = rclcpp::SubscriptionOptions();
-    options.content_filter_options.filter_expression = "node=%0";
+    // Must use 'space' between '=', (e.g. node=%0 not worked)
+    options.content_filter_options.filter_expression = "node = %0";
     std::ostringstream expression_parameter;
     // expression_parameter << "'" << this->get_fully_qualified_name() << "'";
     expression_parameter << this->get_fully_qualified_name();
@@ -90,7 +91,7 @@ private:
       // test with
       // `ros2 param set /minimal_subscriber_with_content_filtered_topic test_param True`
       std::string filter_expression =
-        "node=%0 AND changed_parameters[0].name=%1";
+        "node = %0 AND changed_parameters[0].name = %1";
       std::vector<std::string> expression_parameters = {
         this->get_fully_qualified_name(),
         param_name
@@ -102,6 +103,10 @@ private:
     }
 
     print_cft_options();
+    // TODO(iuhilnehc-ynos): remove the warning log after it works.
+    RCLCPP_WARN(this->get_logger(),
+      "Though set cft expression parameters successfully and get the expected options, "
+      "but the behavior is not expected.");
   }
 
   void topic_callback(const rcl_interfaces::msg::ParameterEvent::ConstSharedPtr msg) const
