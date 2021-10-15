@@ -38,7 +38,8 @@ public:
     auto options = rclcpp::SubscriptionOptions();
     options.content_filter_options.filter_expression = "node=%0";
     std::ostringstream expression_parameter;
-    expression_parameter << "'" << this->get_fully_qualified_name() << "'";
+    // expression_parameter << "'" << this->get_fully_qualified_name() << "'";
+    expression_parameter << this->get_fully_qualified_name();
     options.content_filter_options.expression_parameters = {expression_parameter.str()};
 
     subscription_ = this->create_subscription<rcl_interfaces::msg::ParameterEvent>(
@@ -50,35 +51,6 @@ public:
         "Content filtered topic is not enabled for the subscription.");
     } else {
       print_cft_options();
-
-      // Use a timer with 20s period to set and get content filtered topic options.
-      auto set_get_cft =
-        [this]() -> void
-        {
-          // Only once
-          timer_->cancel();
-
-          // To set content filtered topic options
-          try {
-            // Focus on if the parameter ('test_param') is updated,
-            // not clear whether DDS supports `changed_parameters[].name` without a index,
-            // test with
-            // `ros2 param set /minimal_subscriber_with_content_filtered_topic test_param True`
-            std::string filter_expression =
-              "node=%0 AND changed_parameters[0].name=%1";
-            std::vector<std::string> expression_parameters = {
-              std::string("'") + this->get_fully_qualified_name() + "'",
-              "test_param"
-            };
-            subscription_->set_cft_expression_parameters(filter_expression, expression_parameters);
-          } catch (const std::exception& e) {
-            RCLCPP_WARN(this->get_logger(),
-              "Catch an exception: %s", e.what());
-          }
-
-          print_cft_options();
-        };
-      timer_ = this->create_wall_timer(20s, set_get_cft);
     }
   }
 
@@ -110,22 +82,56 @@ private:
     return ss.str();
   }
 
+  void focus_on_parameter_updated(const std::string & param_name) const {
+    // To set content filtered topic options
+    try {
+      // Focus on if the parameter ('test_param') is updated,
+      // not clear whether DDS supports `changed_parameters[].name` without a index,
+      // test with
+      // `ros2 param set /minimal_subscriber_with_content_filtered_topic test_param True`
+      std::string filter_expression =
+        "node=%0 AND changed_parameters[0].name=%1";
+      std::vector<std::string> expression_parameters = {
+        this->get_fully_qualified_name(),
+        param_name
+      };
+      subscription_->set_cft_expression_parameters(filter_expression, expression_parameters);
+    } catch (const std::exception& e) {
+      RCLCPP_WARN(this->get_logger(),
+        "Catch an exception: %s", e.what());
+    }
+
+    print_cft_options();
+  }
+
   void topic_callback(const rcl_interfaces::msg::ParameterEvent::ConstSharedPtr msg) const
   {
     RCLCPP_INFO(this->get_logger(), "I heard a ParameterEvent for Node '%s', %s",
       msg->node.c_str(), to_string(msg.get()).c_str());
+
+    // check if there is a new parameter named 'test_param', and then set the filter to
+    // only focus on if the parameter is updated
+    for (auto & new_parameter : msg->new_parameters) {
+      if (new_parameter.name == "test_param") {
+        focus_on_parameter_updated(new_parameter.name);
+      }
+    }
   }
 
-  void print_cft_options() {
+  void print_cft_options() const {
     // To get content filtered topic options
     try {
       std::string filter_expression;
       std::vector<std::string> expression_parameters;
       subscription_->get_cft_expression_parameters(filter_expression, expression_parameters);
-      RCLCPP_INFO(this->get_logger(), "get_cft_expression_parameters filter_expression: [%s]", filter_expression.c_str());
+      RCLCPP_INFO(this->get_logger(),
+        "get_cft_expression_parameters filter_expression: [%s]", filter_expression.c_str());
+      std::ostringstream oss;
       for(auto &expression_parameter: expression_parameters) {
-        RCLCPP_INFO(this->get_logger(), "get_cft_expression_parameters expression_parameter: [%s]", expression_parameter.c_str());
+        oss << "[" << expression_parameter << "]";
       }
+      RCLCPP_INFO(this->get_logger(),
+        "get_cft_expression_parameters expression_parameters: [%s]", oss.str().c_str());
     } catch (const std::exception& e) {
       RCLCPP_WARN(this->get_logger(),
         "Catch an exception: %s", e.what());
@@ -133,7 +139,6 @@ private:
   }
 
   rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr subscription_;
-  rclcpp::TimerBase::SharedPtr timer_;
 };
 
 int main(int argc, char * argv[])
