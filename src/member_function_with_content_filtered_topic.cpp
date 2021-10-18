@@ -118,10 +118,6 @@ private:
     }
 
     print_cft_options();
-    // TODO(iuhilnehc-ynos): remove the warning log after it works.
-    RCLCPP_WARN(this->get_logger(),
-      "Though set cft expression parameters successfully and get the expected options, "
-      "but the behavior is not expected.");
   }
 
   void topic_callback(const rcl_interfaces::msg::ParameterEvent::ConstSharedPtr msg) const
