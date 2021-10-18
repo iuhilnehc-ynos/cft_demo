@@ -39,6 +39,8 @@ public:
     // Must use 'space' between '=', (e.g. node=%0 not worked)
     options.content_filter_options.filter_expression = "node = %0";
     std::ostringstream expression_parameter;
+    // TODO: CFT expressions parameters should be set between single quotes for string based on
+    // DDS specification.
     // expression_parameter << "'" << this->get_fully_qualified_name() << "'";
     expression_parameter << this->get_fully_qualified_name();
     options.content_filter_options.expression_parameters = {expression_parameter.str()};
