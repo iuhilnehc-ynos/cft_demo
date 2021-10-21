@@ -36,13 +36,9 @@ public:
       automatically_declare_parameters_from_overrides(true))
   {
     auto options = rclcpp::SubscriptionOptions();
-    // Must use 'space' between '=', (e.g. node=%0 not worked)
     options.content_filter_options.filter_expression = "node = %0";
     std::ostringstream expression_parameter;
-    // TODO: CFT expressions parameters should be set between single quotes for string based on
-    // DDS specification.
-    // expression_parameter << "'" << this->get_fully_qualified_name() << "'";
-    expression_parameter << this->get_fully_qualified_name();
+    expression_parameter << "'" << this->get_fully_qualified_name() << "'";
     options.content_filter_options.expression_parameters = {expression_parameter.str()};
 
     subscription_ = this->create_subscription<rcl_interfaces::msg::ParameterEvent>(
@@ -105,8 +101,8 @@ private:
       std::string filter_expression =
         "node = %0 AND changed_parameters[0].name = %1";
       std::vector<std::string> expression_parameters = {
-        this->get_fully_qualified_name(),
-        param_name
+        std::string("'") + this->get_fully_qualified_name() + "'",
+        std::string("'") + param_name + "'"
       };
       RCLCPP_INFO(this->get_logger(),
         "set_cft_expression_parameters filter_expression: [%s]", filter_expression.c_str());
