@@ -92,7 +92,7 @@ private:
   }
 
   void focus_on_parameter_updated(const std::string & param_name) const {
-    // To set content filtered topic options
+    // To set content filter options
     try {
       // Focus on if the parameter ('test_param') is updated,
       // not clear whether DDS supports `changed_parameters[].name` without a index,
@@ -105,11 +105,11 @@ private:
         std::string("'") + param_name + "'"
       };
       RCLCPP_INFO(this->get_logger(),
-        "set_cft_expression_parameters filter_expression: [%s]", filter_expression.c_str());
+        "set_content_filter filter_expression: [%s]", filter_expression.c_str());
       RCLCPP_INFO(this->get_logger(),
-        "set_cft_expression_parameters expression_parameters: [%s]",
+        "set_content_filter expression_parameters: [%s]",
           to_string(expression_parameters).c_str());
-      subscription_->set_cft_expression_parameters(filter_expression, expression_parameters);
+      subscription_->set_content_filter(filter_expression, expression_parameters);
     } catch (const std::exception& e) {
       RCLCPP_WARN(this->get_logger(),
         "Catch an exception: %s", e.what());
@@ -133,15 +133,15 @@ private:
   }
 
   void print_cft_options() const {
-    // To get content filtered topic options
+    // To get content filter options
     try {
       std::string filter_expression;
       std::vector<std::string> expression_parameters;
-      subscription_->get_cft_expression_parameters(filter_expression, expression_parameters);
+      subscription_->get_content_filter(filter_expression, expression_parameters);
       RCLCPP_INFO(this->get_logger(),
-        "get_cft_expression_parameters filter_expression: [%s]", filter_expression.c_str());
+        "get_content_filter filter_expression: [%s]", filter_expression.c_str());
       RCLCPP_INFO(this->get_logger(),
-        "get_cft_expression_parameters expression_parameters: [%s]",
+        "get_content_filter expression_parameters: [%s]",
           to_string(expression_parameters).c_str());
     } catch (const std::exception& e) {
       RCLCPP_WARN(this->get_logger(),
